@@ -107,12 +107,12 @@ Para el desarrollo de la aplicación deberá utilizar:
 - Redux
 - Librería de estilos (styled-components, CSS modules, o similar)
 - Mobile friendly
-- Unit tests (jest, react-testing-library, o similar)
+- Desarrollo de servicio para leer los datos del json (axios, fetch, etc.) para simular los estados de carga y error.
+- Unit tests de los componentes (jest, react-testing-library, o similar).
 - Manejo de errores
 - _(opcional)_ TypeScript
 - _(opcional)_ Integration/E2E tests
 - _(opcional)_ Deploy automático
-- _(opcional)_ ...
 
 Importante saber:
 - No es necesario crear un entorno de desarrollo/producción.
