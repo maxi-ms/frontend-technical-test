@@ -3,7 +3,7 @@ name: Integracion Jira actualizacion de campos requeridos
 on:
   pull_request:
     branches:
-      - "release/*"
+      - "test-jiramp"
       - "main"
     types:
       - closed
@@ -38,17 +38,41 @@ jobs:
         id: check_jira_fields
         if: env.SKIP_JIRA_UPDATE != 'true'
         run: |
-          JIRA_RESPONSE=$(curl -s -u "it.dev.agent@maxillc.com:${{ secrets.JIRA_IT_DEV_AGENT }}" \
+          echo "📤 Consultando Jira para obtener los campos..."
+          
+          RESPONSE_FILE="jira_response.json"
+
+          STATUS_CODE=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" \
+            -u "it.dev.agent@maxillc.com:${{ secrets.JIRA_IT_DEV_AGENT }}" \
             -X GET "https://maxims.atlassian.net/rest/api/2/issue/${{ env.JIRA_TICKET }}" \
             -H "Content-Type: application/json")
 
-          FIELD_QUE_SE_HIZO=$(echo "$JIRA_RESPONSE" | jq -r '.fields.customfield_10211 // empty')
-          FIELD_OBJETOS_AFECTADOS=$(echo "$JIRA_RESPONSE" | jq -r '.fields.customfield_10212 // empty')
+          echo "📥 Código de respuesta HTTP: $STATUS_CODE"
+          
+          if [[ "$STATUS_CODE" -ne 200 ]]; then
+            echo "❌ Error al consultar Jira. Código HTTP: $STATUS_CODE"
+            echo "🔎 Respuesta de Jira:"
+            cat "$RESPONSE_FILE"
+            exit 3
+          fi
 
-          if [[ -n "$FIELD_QUE_SE_HIZO" && "$FIELD_QUE_SE_HIZO" != "empty" ]] && [[ -n "$FIELD_OBJETOS_AFECTADOS" && "$FIELD_OBJETOS_AFECTADOS" != "empty" ]]; then
-            echo "✅ Los campos ya contienen información. No se actualizarán."
+          JIRA_RESPONSE=$(cat "$RESPONSE_FILE")
+          echo "📄 Respuesta de Jira recibida correctamente."
+
+          echo "📌 Parseando campos personalizados..."
+
+          FIELD_QUE_SE_HIZO=$(echo "$JIRA_RESPONSE" | jq -r '.fields.customfield_10211 // ""' | xargs)
+          FIELD_OBJETOS_AFECTADOS=$(echo "$JIRA_RESPONSE" | jq -r '.fields.customfield_10212 // ""' | xargs)
+
+          echo "🧩 Campo 'Qué se hizo': [$FIELD_QUE_SE_HIZO]"
+          echo "🧩 Campo 'Objetos afectados': [$FIELD_OBJETOS_AFECTADOS]"
+
+          if [[ -n "$FIELD_QUE_SE_HIZO" && "$FIELD_QUE_SE_HIZO" != "null" ]] && \
+            [[ -n "$FIELD_OBJETOS_AFECTADOS" && "$FIELD_OBJETOS_AFECTADOS" != "null" ]]; then
+            echo "✅ Ambos campos ya contienen información. Se omite actualización."
             echo "SKIP_JIRA_UPDATE=true" >> $GITHUB_ENV
           else
+            echo "ℹ️ Uno o ambos campos están vacíos. Se procederá con la actualización."
             echo "SKIP_JIRA_UPDATE=false" >> $GITHUB_ENV
           fi
 
