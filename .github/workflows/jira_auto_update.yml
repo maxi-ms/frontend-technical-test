@@ -22,8 +22,13 @@ jobs:
           PR_BODY="${{ github.event.pull_request.body }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
 
-          JIRA_TICKET=$(echo "$PR_BODY" | grep -o 'https://maxims.atlassian.net/browse/[^ ]*' | head -n 1 | awk -F'/' '{print $NF}')
+          RAW_TICKET=$(echo "$PR_BODY" | grep -o 'https://maxims.atlassian.net/browse/[^ ]*' | head -n 1 | awk -F'/' '{print $NF}')
+    
+          # Limpiar saltos de línea, retorno de carro (\r) y espacios
+          JIRA_TICKET=$(echo "$RAW_TICKET" | tr -d '\r\n' | xargs)
+
           echo "JIRA_TICKET=$JIRA_TICKET" >> $GITHUB_ENV
+          echo "🔎 Ticket de Jira detectado: [$JIRA_TICKET]"
 
           MERGED_BY="${{ github.actor }}"
           echo "MERGED_BY=$MERGED_BY" >> $GITHUB_ENV
